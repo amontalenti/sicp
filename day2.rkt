@@ -33,7 +33,6 @@
   (display (denom x))
   (newline))
 
-
 ; print a rational number
 
 (print-rat (make-rat 2 3))
@@ -87,3 +86,50 @@
 (simplify (make-rat 4 16))
 
 (simplify (normal-rat -4 -16))
+
+(define (square x) (* x x))
+
+; this returns in reverse order; why?
+(define (square-list items)
+  (define (iter things answer)
+    (if (null? things)
+        answer
+        (iter (cdr things)
+              (cons answer (square (car things))))))
+  (flatten (iter items null)))
+
+(define (for-each fn items)
+  (map fn items)
+  (void))
+
+(square-list (list 1 2 3))
+
+(define (accumulate op initial sequence)
+  (void))
+
+; still need to implement accumulate for these using
+; the tail recursive (iterative) option
+
+(define (map-2 p sequence)
+  (accumulate (lambda (x y) (cons (p x) y)) null sequence))
+
+(define (append-2 seq1 seq2)
+  (accumulate cons (void) (void) ))
+
+(define (length-2 sequence)
+  (accumulate (void) 0 sequence))
+
+; exercise 2.54, implementing recursive equality
+
+(define (equal-deep lhs rhs)
+  (if (or (and (symbol? lhs) (symbol? rhs)) (and (null? lhs) (null? rhs)))
+      (eq? lhs rhs)
+      (and (equal-deep (car lhs) (car rhs)) (equal-deep (cdr lhs) (cdr rhs)))))
+
+(define (equal-2 lhs rhs)
+  (if (= (length lhs) (length rhs))
+      (equal-deep lhs rhs)
+      false))
+
+(equal-2 '(x y z) '(x y z)) ; that works!
+
