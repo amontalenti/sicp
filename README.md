@@ -1,4 +1,6 @@
-# Notes on SICP course with @dabeaz in Chicago (Aug 27 - 31, 2018)
+# Notes on SICP course
+
+With @dabeaz in Chicago (Aug 27 - 31, 2018)
 
 ## Day one
 
