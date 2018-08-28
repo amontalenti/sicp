@@ -133,3 +133,7 @@
 
 (equal-2 '(x y z) '(x y z)) ; that works!
 
+(and (equal? (list 1 2 3) (quote (1 2 3))) (equal? '(1 2 3) (quote (1 2 3)))) ; #t
+
+(and (equal? (list 1 'x 3) (quote (1 x 3))) (equal? '(1 x 3) (quote (1 x 3)))) ; #t
+
