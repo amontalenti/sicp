@@ -81,6 +81,7 @@ def s_eval(expr):
             print("or => False")
             return False
         elif expr[0] == 'cond':
+            # FIXME: cond needs tests to make sure it's right
             print("cond =>", expr)
             conditions = expr[1:]
             for condition in conditions:
