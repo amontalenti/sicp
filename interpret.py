@@ -103,26 +103,28 @@ def s_eval(expr):
                 return s_eval(("cons", head, tail))
             return s_eval(("cons", head, ("list",) + tail))
         elif expr[0] == 'lambda':
-            symbol = expr[0]
-            arg_decl = expr[1]
-            body = expr[2]
+            proc_args = expr[1]
+            proc_body = expr[2]
 
-            def fn(*args):
+            def proc(*args):
                 global env
-                assert len(args) == len(arg_decl), f"arity mismatch: {ptr}"
+                assert len(args) == len(proc_args), f"arity mismatch: {ptr}"
                 # nested scope
                 env = env.new_child()
                 # update scope with locals
-                locals = dict(zip(arg_decl, args))
+                locals = dict(zip(proc_args, args))
                 env.update(locals)
                 print(f"=> lambda call; bindings: {locals}")
-                ret = s_eval(body)
+                # evaluate body of the lambda
+                result = s_eval(proc_body)
                 # restore scope
                 env = env.parents
-                return ret
+                # return evaluated result of lambda
+                return result
 
-            fn.arg_decl = arg_decl
-            return fn
+            proc.proc_body = proc_body
+            proc.proc_args = proc_args
+            return proc
         elif expr[0] == 'quote':
             raise NotImplemented
         elif expr[0] is None:
@@ -133,6 +135,10 @@ def s_eval(expr):
             proc_name = expr[0]
             proc = env.get(proc_name, None)
             assert proc is not None, f"function {proc_name} not found: {ptr}"
+            if hasattr(proc, "proc_body"):
+                print("proc_body =>", proc.proc_body)
+            else:
+                print("proc_body => <builtin>")
             # Applicative evaluation. Arguments evaluate first
             args = [s_eval(arg) for arg in expr[1:]]
             return s_apply(proc_name, proc, args)
