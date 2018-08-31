@@ -111,7 +111,7 @@ def s_eval(expr):
             # This will require some explanation!
             # This inner function here is our "procedure", and it has a
             # a few responsibilities:
-            #     1. Keep a reference to the scope at definition time, 
+            #     1. Keep a reference to the scope at definition time,
             #        so that it can access (close over) so-called "free
             #        variables"; this is known as closure. Ironically,
             #        this is implemented using Python closure over the
@@ -123,7 +123,7 @@ def s_eval(expr):
             #        the function. Ironically, this is done using a
             #        *-args function and closure, as well.
             #     4. Set up the environment for our call to `s_eval`,
-            #        evaluate the s-expressions recursively, and 
+            #        evaluate the s-expressions recursively, and
             #        capture the return value. Then, restore the
             #        environment to ensure no "dynamic scope" leakage.
             def proc(*args):
@@ -215,7 +215,10 @@ def main():
         ("inc", 1),
         ("dec", 1),
         ("incdec", 0, 1),
-        ("define", "fib", ("lambda", ("n",), ("if", ("<=", "n", 2), 1, ("+", ("fib", ("-", "n", 1)), ("fib", ("-", "n", 2)))))),
+        ("define", "fib", ("lambda", ("n",),
+            ("if", ("<=", "n", 2),
+             1,
+             ("+", ("fib", ("-", "n", 1)), ("fib", ("-", "n", 2)))))),
         ("fib", 10)
     )))
 

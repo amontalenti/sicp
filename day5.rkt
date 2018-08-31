@@ -2,24 +2,45 @@
 
 ; our own Scheme interpreter... in Scheme
 
-(define envs (cons (make-hash) null))
+; Environment is a list of hash tables
+(define env (cons (make-hash) null))
 
-(define env (car envs))
+(define (lookup-name name)
+  (define (lookup hashes name)
+    (if (null? hashes)
+        (error "KeyError:" name)
+        (if (hash-has-key? (car hashes) name)
+            (hash-ref (car hashes) name)
+            (lookup (cdr hashes) name))))
+  (lookup env name))
 
-(define (child-env!)
-   (set! envs (cons envs (make-hash))))
+(define (new-env oldenv)
+  (cons (make-hash) oldenv))
 
-(define (parent-env!)
-  (set! envs (car envs)))
+(define (set-name! name value) (hash-set! (car env) name value))
 
-(define (update-env! keys values)
+(define (hash-update! h keys values)
   ; I felt like a functional programming zen master when I wrote this
-  (apply (curry hash-set*! env) (flatten (map list keys values))))
+  (apply (curry hash-set*! h) (flatten (map list keys values)))
+  void)
+
+(define (if? expr)
+  (and (pair? expr) (eq? (car expr) 'if)))
+
+(define (eval-if expr)
+  (define (eval-predicate)
+    (my-eval (cadr expr)))
+  (define (eval-true)
+    (my-eval (caddr expr)))
+  (define (eval-false)
+    (my-eval (cadddr expr)))
+  (if (eval-predicate) (eval-true) (eval-false)))
 
 (define (my-eval expr)
    (cond ((primitive? expr) expr)
-         ((symbol? expr) (lookup-name expr))
+         ((if? expr) (eval-if expr))
          ((define? expr) (define-symbol expr))
+         ((symbol? expr) (lookup-name expr))
          ((pair? expr) (call-procedure expr))
          (else (error "Bad expression:" expr)))
   )
@@ -56,18 +77,19 @@
   ; notice how it differs from interpret.py, where we
   ; implement the 'lambda' form using a nested Python function
   (let ([proc-name (car spec)]
-        [proc-args (cdr spec)])
-    (hash-set! env proc-name (cons 'udf (lambda args
-       (begin
-         ; create nested scope; note the bug in interpret.py
-         ; related to dynamic scoping
-         (child-env!)
+        [proc-args (cdr spec)]
+        [define-scope env])
+    (set-name! proc-name (cons 'udf (lambda args
+       (let ([old-env env]
+             ; create nested scope
+             [function-scope (make-hash)])
          ; update local bindings
-         (update-env! proc-args args)
+         (hash-update! function-scope proc-args args)
+         (set! env (cons function-scope define-scope))
          ; evaluate result
          (let ([result (my-eval body)])
            ; restore scope
-           (parent-env!)
+           (set! env old-env)
            result)
     ))))))
 
@@ -96,15 +118,6 @@
   (let ([args (cdr expr)])
     args))
 
-(define (lookup-name name)
-  (chain-lookup name envs))
-
-(define (chain-lookup name envs)
-  (hash-ref env name))
-
-(define (set-name! name value)
-  (hash-set! env name value))
-
 ; built-ins and constants
 (set-name! 'true #t)
 (set-name! 'false #f)
@@ -113,6 +126,10 @@
 (set-name! '- (cons 'builtin -))
 (set-name! '/ (cons 'builtin /))
 (set-name! '* (cons 'builtin *))
+(set-name! '<= (cons 'builtin <=))
+(set-name! '>= (cons 'builtin >=))
+(set-name! '> (cons 'builtin >))
+(set-name! '< (cons 'builtin <))
 
 (define (udf-apply fn args)
   (apply fn args))
@@ -132,4 +149,8 @@
 ; I needed somewhere to stuff the locals
 (my-eval '(define (square x) (* x x))) ; make a square function
 (my-eval '(square 5)) ; gives 25!
-envs
+(my-eval '(define (fib n)
+            (if (<= n 2)
+                1
+                (+ (fib (- n 1)) (fib (- n 2))))))
+(my-eval '(fib 10))
