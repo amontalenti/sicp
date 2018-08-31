@@ -175,8 +175,8 @@ cycled
              (set-mcdr! rear-ptr new-entry)
              (set! rear-ptr new-entry)
            ))))
+   ; dispatch table for methods
    (define (dispatch m . args)
-     ; dispatch table for methods
     (cond  [(eq? m 'insert!) (apply insert! args)]
            [(eq? m 'empty?) (empty?)]
            [(eq? m 'front) front-ptr]
@@ -193,3 +193,58 @@ cycled
 (qobj 'front)
 (qobj 'rear)
 (qobj 'repr)
+
+(displayln (stream->list (stream-map + (in-range 3))))
+
+(define (show x)
+  (display "=>")
+  (displayln x)
+  x)
+
+(define st (stream-map show (in-range 10)))
+
+(stream-ref st 5)
+
+(stream-ref st 7)
+
+(stream->list (in-range 10))
+
+(define sum 0)
+
+(define (accum x)
+  (set! sum (+ x sum))
+  sum)
+
+(define seq (stream-map accum (in-range 1 20)))
+(define y2 (stream-filter even? seq))
+(define z2 (stream-filter (lambda (x) (= (remainder x 5) 0))
+                         seq))
+
+(stream-ref y2 5)
+
+(define (display-stream s)
+  (stream-for-each displayln s))
+
+(display-stream z2)
+
+; this is a *bad*, *broken* implementation of memoization
+; because if `args` differs on subsequent calls, the caching
+; will be wrong
+(define (memo-proc proc)
+  (let ((already-run? false) (result false))
+    (lambda args
+      (if (not already-run?)
+          (begin (set! result (apply proc args))
+                 (set! already-run? true)
+                 result)
+          result))))
+
+(stream-first (in-naturals 1)) ;1
+(apply + (map + (list 1 0) (list 0 1))) ;2
+(stream->list (stream-map abs (in-range -2 3))) ;'(2 1 0 1 2)
+
+(define (stream-take-n stream n)
+  ; takes the first n elements out of stream, and returns them as a list
+  (stream->list (stream-map (lambda (i) (stream-ref stream i)) (in-range n))))
+
+(stream-take-n (in-range 10) 3) ; '(0 1 2)
