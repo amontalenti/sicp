@@ -248,3 +248,18 @@ cycled
   (stream->list (stream-map (lambda (i) (stream-ref stream i)) (in-range n))))
 
 (stream-take-n (in-range 10) 3) ; '(0 1 2)
+
+; digression: code as data
+
+(displayln "SQL code?")
+(define sql '(select * from table where name = "Andrew"))
+(displayln sql)
+(void (for/list ([ln sql]) (println ln)))
+(displayln "---")
+
+
+(displayln "HTML code?")
+(define html '(<html> <div align="center"> <h1>Hello, world!</h1> </div>))
+(displayln html)
+(void (for/list ([ln html]) (println ln)))
+(displayln "---")
