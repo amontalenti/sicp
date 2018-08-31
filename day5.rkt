@@ -59,7 +59,8 @@
         [proc-args (cdr spec)])
     (hash-set! env proc-name (cons 'udf (lambda args
        (begin
-         ; create nested scope
+         ; create nested scope; note the bug in interpret.py
+         ; related to dynamic scoping
          (child-env!)
          ; update local bindings
          (update-env! proc-args args)
