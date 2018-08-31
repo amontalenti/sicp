@@ -105,33 +105,43 @@ def s_eval(expr):
         elif expr[0] == 'lambda':
             proc_args = expr[1]
             proc_body = expr[2]
+            # nested scope
+            define_scope = env
 
-            # This has a subtle bug: it implemented dynamic scoping!
-            # if sum_of_squares(x, y) calls square(x), and square
-            # looks for the symbol `y`, it'll *find it*... this is
-            # because in the call stack, each call to the UDF will
-            # create a new nested (child) scope, but the caller's
-            # scopes will still be available. Funny enough, I
-            # reproduced this bug when I wrote the Scheme version.
-            # The solution is that you need to partial() (curry) the
-            # environment at definition-time to this procedure.
-            # Then, you need to have lookups point at that environment.
-            # When the function is done running, it can restore the
-            # environment... essentially the use of `global env`
-            # and `env = env.parents` is not correct below.
+            # This will require some explanation!
+            # This inner function here is our "procedure", and it has a
+            # a few responsibilities:
+            #     1. Keep a reference to the scope at definition time, 
+            #        so that it can access (close over) so-called "free
+            #        variables"; this is known as closure. Ironically,
+            #        this is implemented using Python closure over the
+            #        define_scope label, closed over using `nonlocal`.
+            #     2. Check arity of the function.
+            #     3. Create a local `function_scope`, which comes from
+            #        binding the function argument symbols from the
+            #        function definition to the values passed in to
+            #        the function. Ironically, this is done using a
+            #        *-args function and closure, as well.
+            #     4. Set up the environment for our call to `s_eval`,
+            #        evaluate the s-expressions recursively, and 
+            #        capture the return value. Then, restore the
+            #        environment to ensure no "dynamic scope" leakage.
             def proc(*args):
                 global env
+                nonlocal define_scope
                 assert len(args) == len(proc_args), f"arity mismatch: {ptr}"
-                # nested scope
-                env = env.new_child()
                 # update scope with locals
+                function_scope = define_scope.new_child()
                 locals = dict(zip(proc_args, args))
-                env.update(locals)
+                function_scope.update(locals)
                 print(f"=> lambda call; bindings: {locals}")
+                # set function scope
+                old_env = env
+                env = function_scope
                 # evaluate body of the lambda
                 result = s_eval(proc_body)
-                # restore scope
-                env = env.parents
+                # restore to prior scope
+                env = old_env
                 # return evaluated result of lambda
                 return result
 
@@ -179,7 +189,7 @@ def main():
     print("---")
     try:
         print(s_eval((
-            ("define", "inc", ("lambda", ("x"), ("+", "x", 1))),
+            ("define", "inc", ("lambda", ("x",), ("+", "x", 1))),
             ("inc", 1, 1)
         )))
     except:
@@ -189,7 +199,7 @@ def main():
     print("---")
     try:
         print(s_eval((
-            ("define", "inc", ("lambda", ("x"), ("+", "x", 1))),
+            ("define", "inc", ("lambda", ("x",), ("+", "x", 1))),
             ("dec", 1)
         )))
     except:
@@ -199,10 +209,14 @@ def main():
     print("---")
     # correct
     print(s_eval((
-        ("define", "inc", ("lambda", ("x"), ("+", "x", 1))),
-        ("define", "dec", ("lambda", ("x"), ("-", "x", 1))),
+        ("define", "inc", ("lambda", ("x",), ("+", "x", 1))),
+        ("define", "dec", ("lambda", ("x",), ("-", "x", 1))),
+        ("define", "incdec", ("lambda", ("x", "y"), ("inc", "y"))),
         ("inc", 1),
-        ("dec", 1)
+        ("dec", 1),
+        ("incdec", 0, 1),
+        ("define", "fib", ("lambda", ("n",), ("if", ("<=", "n", 2), 1, ("+", ("fib", ("-", "n", 1)), ("fib", ("-", "n", 2)))))),
+        ("fib", 10)
     )))
 
 if __name__ == "__main__":
