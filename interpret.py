@@ -106,6 +106,19 @@ def s_eval(expr):
             proc_args = expr[1]
             proc_body = expr[2]
 
+            # This has a subtle bug: it implemented dynamic scoping!
+            # if sum_of_squares(x, y) calls square(x), and square
+            # looks for the symbol `y`, it'll *find it*... this is
+            # because in the call stack, each call to the UDF will
+            # create a new nested (child) scope, but the caller's
+            # scopes will still be available. Funny enough, I
+            # reproduced this bug when I wrote the Scheme version.
+            # The solution is that you need to partial() (curry) the
+            # environment at definition-time to this procedure.
+            # Then, you need to have lookups point at that environment.
+            # When the function is done running, it can restore the
+            # environment... essentially the use of `global env`
+            # and `env = env.parents` is not correct below.
             def proc(*args):
                 global env
                 assert len(args) == len(proc_args), f"arity mismatch: {ptr}"

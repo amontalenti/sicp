@@ -52,13 +52,20 @@
   (set-name! (car spec) (cons 'udf body)))
 
 (define (define-complex-function spec body)
+  ; this is the most interesting piece of the interpreter
+  ; notice how it differs from interpret.py, where we
+  ; implement the 'lambda' form using a nested Python function
   (let ([proc-name (car spec)]
         [proc-args (cdr spec)])
     (hash-set! env proc-name (cons 'udf (lambda args
        (begin
+         ; create nested scope
          (child-env!)
+         ; update local bindings
          (update-env! proc-args args)
+         ; evaluate result
          (let ([result (my-eval body)])
+           ; restore scope
            (parent-env!)
            result)
     ))))))
@@ -97,6 +104,7 @@
 (define (set-name! name value)
   (hash-set! env name value))
 
+; built-ins and constants
 (set-name! 'true #t)
 (set-name! 'false #f)
 (set-name! 'pi 3.14)
@@ -122,5 +130,5 @@
 ; that's because we haven't finished our implementation of `envs` yet, and
 ; I needed somewhere to stuff the locals
 (my-eval '(define (square x) (* x x))) ; make a square function
-(my-eval '(square 5))
+(my-eval '(square 5)) ; gives 25!
 envs
